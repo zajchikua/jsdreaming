@@ -1,3 +1,9 @@
+// Function to load artworks page
+function loadArtworksPage() {
+    // Redirect to the artworks page
+    window.open('artworks.html', '_blank');
+}
+
 // Fetch artworks from the API
 function fetchArtworks(pageNumber) {
     const limit = 50;
@@ -8,99 +14,80 @@ function fetchArtworks(pageNumber) {
         .then(data => data);
 }
 
-// Display artworks on the page
+// Function to display artworks on the page
 function displayArtworks(artworks) {
     const artworksContainer = document.getElementById('artworks-container');
     artworksContainer.innerHTML = ''; // Clear existing content
 
     artworks.forEach(artwork => {
         const artworkLink = document.createElement('a');
-        artworkLink.href = `artwork.html?id=${artwork.id}`;
-        artworkLink.textContent = artwork.id;
+        artworkLink.href = `artwork-details.html?id=${artwork.id}`;
+        artworkLink.textContent = artwork.title;
         artworkLink.classList.add('artwork-link');
+        artworkLink.addEventListener('click', function(event) {
+            event.preventDefault();
+            fetchArtworkDetails(artwork.id);
+        });
         artworksContainer.appendChild(artworkLink);
         artworksContainer.appendChild(document.createElement('br'));
     });
 }
 
-// Display pagination links
+/// Function to fetch artwork details
+ function fetchArtworkDetails(artworkId) {
+     const apiUrl = `https://api.artic.edu/api/v1/artworks/${artworkId}`;
+     return fetch(apiUrl)
+         .then(response => response.json())
+         .then(data => {
+             const artwork = data.data;
+             displayArtworkDetails(artwork);
+         })
+         .catch(error => console.error('Error fetching artwork details:', error));
+ }
+
+ // Function to display artwork details on a new page
+ function displayArtworkDetails(artwork) {
+     const imageBaseUrl = `https://www.artic.edu/iiif/2`;
+     const imageUrl = `${imageBaseUrl}/${artwork.image_id}/full/843,/0/default.jpg`;
+
+     const newPage = window.open('', '_blank');
+     newPage.document.write(`
+         <html>
+             <head>
+                 <title>${artwork.title}</title>
+             </head>
+             <body>
+                 <h1>${artwork.title}</h1>
+                 <img src="${imageUrl}" alt="${artwork.title}">
+                 <p>Artist: ${artwork.artist_title}</p>
+                 <p>Date: ${artwork.date_display}</p>
+                 <p>Medium: ${artwork.medium}</p>
+                 <!-- Add more fields here -->
+             </body>
+         </html>
+     `);
+     newPage.document.close();
+ }
+
+// Function to display pagination links
 function displayPagination(totalPages, currentPage) {
     const paginationContainer = document.getElementById('pagination');
     paginationContainer.innerHTML = ''; // Clear existing content
 
-    const maxPagesToShow = 5; // Maximum number of pages to display
-    const pages = [];
-
-    // Always show the first page
-    pages.push(1);
-
-    // Calculate the range of pages to display
-    let startPage, endPage;
-    if (totalPages <= maxPagesToShow) {
-        // If total pages is less than or equal to maxPagesToShow, show all pages
-        startPage = 2;
-        endPage = totalPages;
-    } else {
-        // If total pages is more than maxPagesToShow, calculate startPage and endPage
-        if (currentPage <= Math.ceil(maxPagesToShow / 2)) {
-            // If currentPage is close to the beginning
-            startPage = 2;
-            endPage = maxPagesToShow - 1;
-        } else if (currentPage + Math.floor(maxPagesToShow / 2) >= totalPages) {
-            // If currentPage is close to the end
-            startPage = totalPages - maxPagesToShow + 3;
-            endPage = totalPages - 1;
-        } else {
-            // If currentPage is in the middle
-            startPage = currentPage - Math.floor(maxPagesToShow / 2);
-            endPage = currentPage + Math.floor(maxPagesToShow / 2) - 1;
-        }
-    }
-
-    // Add page links within the range
-    for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-    }
-
-    // Add ellipses if necessary
-    if (startPage > 2) {
-        pages.splice(1, 0, '...');
-    }
-    if (endPage < totalPages - 1) {
-        pages.splice(pages.length - 1, 0, '...');
-    }
-
-    // Always show the last page
-    if (totalPages > 1) {
-        pages.push(totalPages);
-    }
-
-    // Display page links
-    pages.forEach((page, index) => {
-        if (page === '...') {
-            paginationContainer.appendChild(document.createTextNode('...'));
-        } else {
-            const pageLink = createPageLink(page, page);
-            if (page === currentPage) {
-                pageLink.classList.add('active');
-            }
-            paginationContainer.appendChild(pageLink);
-            if (index < pages.length - 1) {
-                paginationContainer.appendChild(document.createTextNode(', '));
-            }
-        }
-    });
-
-    // Function to create page links
-    function createPageLink(text, page) {
+    // Create pagination links
+    for (let i = 1; i <= totalPages; i++) {
         const pageLink = document.createElement('a');
-        pageLink.href = `artworks.html?page=${page}`;
-        pageLink.textContent = text;
-        return pageLink;
+        pageLink.href = `jsdreaming.html?page=${i}`;
+        pageLink.textContent = i;
+        if (i === currentPage) {
+            pageLink.classList.add('active');
+        }
+        paginationContainer.appendChild(pageLink);
+        if (i < totalPages) {
+            paginationContainer.appendChild(document.createTextNode(', '));
+        }
     }
 }
-
-
 
 // Handle page load
 window.onload = function () {
@@ -114,4 +101,4 @@ window.onload = function () {
             displayPagination(totalPages, page);
         })
         .catch(error => console.error('Error fetching artworks:', error));
-};
+}
